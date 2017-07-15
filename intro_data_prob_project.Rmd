@@ -1,0 +1,199 @@
+---
+title: "Exploring the BRFSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(plyr)
+```
+
+### Load data
+
+```{r load-data}
+load("brfss2013.RData")
+```
+
+
+
+* * *
+
+## Part 1: Data
+The data collected comes from the Behavioral Risk Factor Surveillance System dataset and provides information on wellness and health throughout the US.
+
+We seem to have a simple random sample where each case is equally likely to be selected. Data was collected through Random digit dialing (RDD) techniques on both landlines and cell phones. While we have random sampling, we seem to have no random assignment throughout our study, and thus cannot make statements regarding causality, but can still say that our findings are generalizable. One thing to note, however, is that because of the non-response nature of these phone interviews, there is an element of sampling bias prevalent in the data.
+
+* * *
+
+## Part 2: Research questions
+
+**Research quesion 1:**
+Question 1: Do people who suffer from depression have a higher body mass index/weigh more?
+
+In this question, I will explore the relationship between depression and body weight/body mass index (variables used include misdeprd, X_bmim5, wtkg3). What I find intriguing about this question in particularly is figuring out whether or not our mental health can affect our physical health in direct, noticeable ways.
+
+**Research quesion 2:**
+Question 2: Do people who eat less dark green veggies experience less likely to experience heart attack or heart disease?
+
+Here, our goal is to figure out whether or not the amount of green veggies is related to the occurence or non-occurence of heart disease (variables used include cvdinfr4, cvdcrhd4 and X_vegesum). What's interesting here is that if there is a correlation between eating more dark-green veggies and a lesser likelihood of heart problems, we can recommend people with a history of heart issues (like myself) to switch up their diets.
+
+**Research quesion 3:**
+Question 3: Which month do people tend to have the most "poor health"" days in?
+
+With question 3,  I will analyze the different months of the year by comparing the number of days people felt poorly about their physical and mental health in the month leading up to their interview (variables used include poorhlth, imonth). It would be interesting to see whether or not there is a trend in people's wellness based on the time of the year and whether or not there is a relationship between the month and a person's hfeelings towards their health.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+**Research quesion 1:**
+
+```{r}
+
+# Clean out "NA" results for misdeprd variable from brsfss2013
+temp_set <- brfss2013 %>%
+  filter(!is.na(misdeprd))
+
+# Clean out "NA" results for wtkg3 variable and summarise median, mean from brsfss2013
+weight_temp_set <- temp_set %>%
+  filter(!is.na(wtkg3))
+
+# Create a chart summarizing mean, median, and IQR for each of the depression categories
+weight_temp_set %>%
+  group_by(misdeprd) %>%
+  summarise(mean = mean(wtkg3), median = median(wtkg3), n = n())
+```
+
+Resarch Question 1, Table 1:
+As you can see by the data aboves, the mean weight values listed above show that people who put down "None" when asked how often they experienced depression in the past 30 days have the lowest average weight value at 7986.421. However, while people who stated that they experienced depression "Most" of the time in the past 30 days have the highest average weight value, people who stated that they experienced depression "All" of the time in the past 30 days have the second lowest mean weight value.
+
+While our data seems to show a correlation between average weight and the severity of depression (i.e. on average, those who experienced more depression in the past 30 days have a higher weight), the fact that those who experience depression "All" of the time in the past 30 days have the second lowest mean weight means there is no clear correlatory relationship.
+
+```{r}
+# Plot misdeprd vs. wtkg3
+ggplot(data = weight_temp_set, aes(x = misdeprd, y = wtkg3)) +
+  geom_boxplot()
+
+```
+
+
+Resarch Question 1, Box Plot 1: 
+Our box plot here of the oftenness of depression in the past 30 days versus the weight scores of patients tells a similar story as the data above. Mean weight for the "Most" category is the highest, while mean weight for the "None" category is the lowest. One thing to note is that there seems to there seems to be the most number of data points outside of the second and third quartiles for those under the "None" category, while the data points for the "Most" category is quite compact rather than greatly spread out.
+
+```{r}
+
+# Clean out "NA" results for X_bmi5 variable from brsfss2013
+bmi_temp_set <- temp_set %>%
+  filter(!is.na(X_bmi5))
+
+# Create a chart summarizing mean, median, and IQR for each of the depression categories
+bmi_temp_set %>%
+  group_by(misdeprd) %>%
+  summarise(mean = mean(X_bmi5), median = median(X_bmi5), n = n())
+
+
+```
+
+
+Resarch Question 1, Table 2: 
+The mean weight for each varying level of depression in the past 30 days also shows a slight correlation, with those who felt no depression in the past 30 days having the lowest mean BMI and those who felt depression "Most" of the time having the highest mean BMI Again, however, the mean BMI for those who experienced depression "All" of the time have the third lowest mean BMI, which means the trend of more depression correlating with a higher BMI is negated by that "All" category.
+
+```{r}
+
+# Plot misdeprd vs. X_bmi5
+ggplot(data = bmi_temp_set, aes(x = misdeprd, y = X_bmi5)) +
+  geom_boxplot()
+
+
+```
+
+
+Resarch Question 1, Box Plot 2: 
+Again, our box plot for oftenness of depression versus BMI shows the same story as our summary table above. There is a trend that shows BMI going up with the oftenness of depression (from "None" being the lowest to "Most" being the highest) but then a dip down when we hit the "All" category. Like our plot for oftenness of depression versus weight, the "None" responders had a number of data points outside of the third and second quartiles, while our "All" and "Most" responders seemed to have the tightest spread.
+
+***
+
+**Research quesion 2:**
+
+```{r}
+# First, clean out our variables from "NA" responses in cvdinfr4, cvdcrhd4 and grenday_
+temp_set_2 <- brfss2013 %>%
+  filter(!is.na(cvdinfr4))
+temp_set_2 <- temp_set_2 %>%
+  filter(!is.na(cvdcrhd4)) 
+temp_set_2 <- temp_set_2 %>%
+  filter(!is.na(X_vegesum))
+
+# Now that we've cleaned out our data, let's start by combining our cvdinfr4 and cvdcrhd4 variables into one variable
+temp_set_2 <- temp_set_2 %>%
+  mutate(heartproblem = ifelse(cvdinfr4 == "Yes" | cvdcrhd4 == "Yes", "Yes", "No"))
+
+# Now that we've combined our cvdinfr4 and cvdcrhd4 variables, let's chart and analyze our data
+temp_set_2 %>%
+  group_by(heartproblem) %>%
+  summarise(mean = mean(X_vegesum), median = median(X_vegesum), n = n())
+
+
+```
+
+Resarch Question 2, Table 1: 
+As seen here in our table, those who have never been diagnosed with a heart attack or a heart disease had an average vegetable consumption of 1.918175 per day, while those who have experience either a heart attack or heart disease have an average vegetable consumption of 1.752391 per day (note that the "heartproblem" variable categorizes people as either "Yes" or "No", with a "Yes" person having experienced either a heart attack or a heart disease and a "No" person never having experienced a heart attack or disease). In addition, the median amount of vegetables consumed per day for those who have experienced a heart attack/disease is lower at 1.53 when compared to those who have never experienced one at 1.67. Based on these summary statistics, alone, we are led to believe that there is a correlation between people eating more vegetables also not experiencing heart attacks/diseases.
+
+```{r}
+
+# Now we can plot our bar graph
+ggplot(data = temp_set_2, aes(x = heartproblem, y = X_vegesum)) +
+  geom_boxplot() + 
+  coord_cartesian(xlim = c(0, 3), ylim = c(0,400))
+
+```
+
+Resarch Question 2, Box Plot 1: 
+A similar narrative is apparent with the box plot shown here, where, again, the average number of vegetables consumed for people who have not experienced heart problems is higher than those who have not. Notice that the 75th and 25th percentiles for vegetables consumed per day by who have not experienced heart attack/disease is higher than the 75th and 25th percentiles for vegetables consumed per day by those who have.
+
+***
+
+**Research quesion 3:**
+
+```{r}
+
+# We begin by cleaning out NA responses from our data.
+temp_set_3 <- brfss2013 %>%
+  filter(!is.na(imonth))
+
+temp_set_3 <- temp_set_3 %>%
+  filter(!is.na(poorhlth))
+
+# Here we create a new data set that holds the summary stats for each month
+temp_set_x <- temp_set_3 %>%
+  group_by(imonth) %>%
+  summarise(mean = mean(poorhlth), median = median(poorhlth), n = n())
+
+temp_set_x %>%
+  select(imonth, mean, median, n)
+
+```
+
+Resarch Question 3, Table 1: 
+The highest average number of poor health days in 30 days leading up to the interview date is in June, with 5.529 "poor health days" on average. The lowest avereage number of poor health days in the 30 days leading up to the interview is in November, with 5.0739. 
+
+While there is less than a 0.5 difference between the two, there seems to be a slight indication that months in the summer (June in particular) has people feeling particualrly poorly about their health. On the opposite end, months in Winter and Spring tend to have the lowest average number of poor health days leading up to the interview.
+
+```{r}
+
+ggplot(data = temp_set_x, aes(x = imonth, y = mean)) +
+  geom_bar(stat = "identity")
+
+```
+
+Resarch Question 3, Bar Chart 1: 
+Looking at the bar chart above, we see that our conclusions based on the table are confirmed. In general, while there doesn't seem to be a huge difference in average number of poor health days leading up to the interview, we can see that the summer months tend to have the highest values while the winter months tend to be on the lower end.
